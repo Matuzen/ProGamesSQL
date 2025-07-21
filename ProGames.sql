@@ -5,62 +5,36 @@ USE ProGames;
 GO
 
 
--- Tipo de movimenta��o de estoque
+-- Tipo de movimentação de estoque
 CREATE TABLE TipoMovimentacaoEstoque (
-    Id INT IDENTITY(1,1),
+    Id UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
     Nome NVARCHAR(50) NOT NULL,
     CONSTRAINT PK_TipoMovimentacaoEstoque PRIMARY KEY (Id)
 );
 GO
 
--- Tabela de Usu�rios
+-- Tabela de Usuários
 CREATE TABLE Usuario (
-    Id INT IDENTITY(1,1),
+    Id UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
     Nome NVARCHAR(100) NOT NULL,
-    Email NVARCHAR(100) NOT NULL UNIQUE,
-    SenhaHash NVARCHAR(255) NOT NULL,
+    Email NVARCHAR(100) NOT NULL, 
+    Senha NVARCHAR(255) NOT NULL,
     Ativo BIT NOT NULL DEFAULT 1,
     CONSTRAINT PK_Usuario PRIMARY KEY (Id)
 );
 GO
 
--- Tabela de Formas de Pagamento
-CREATE TABLE FormaPagamento (
-    Id INT IDENTITY(1,1),
-    Nome NVARCHAR(50) NOT NULL,
-    Descricao NVARCHAR(150),
-    CONSTRAINT PK_FormaPagamento PRIMARY KEY (Id)
-);
-GO
-
--- Tabela de Status de Venda
-CREATE TABLE StatusVenda (
-    Id INT IDENTITY(1,1),
-    Nome NVARCHAR(50) NOT NULL,
-    Descricao NVARCHAR(150),
-    CONSTRAINT PK_StatusVenda PRIMARY KEY (Id)
-);
-GO
-
--- Tabela de Tipo de Venda
-CREATE TABLE TipoVenda (
-    Id INT IDENTITY(1,1),
-    Nome NVARCHAR(50) NOT NULL,
-    CONSTRAINT PK_TipoVenda PRIMARY KEY (Id)
-);
-GO
-
 -- Fabricantes de plataformas
 CREATE TABLE FabricantePlataforma (
-    Id INT IDENTITY(1,1),
+    Id UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
     Nome NVARCHAR(100) NOT NULL,
     CONSTRAINT PK_FabricantePlataforma PRIMARY KEY (Id)
 );
 GO
 
--- G�neros de jogos
+-- Gêneros de jogos
 CREATE TABLE GeneroJogo (
-    Id INT IDENTITY(1,1),
+    Id UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
     Nome NVARCHAR(50) NOT NULL,
     Descricao NVARCHAR(150),
     CONSTRAINT PK_GeneroJogo PRIMARY KEY (Id)
@@ -69,7 +43,7 @@ GO
 
 -- Clientes
 CREATE TABLE Cliente (
-    Id INT IDENTITY(1,1),
+    Id UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
     NomeCompleto NVARCHAR(100) NOT NULL,
     CPF_CNPJ NVARCHAR(20) UNIQUE NOT NULL,
     Ativo BIT NOT NULL DEFAULT 1,
@@ -82,8 +56,8 @@ GO
 
 -- Contatos
 CREATE TABLE Contato (
-    Id INT IDENTITY(1,1),
-    ClienteId INT NOT NULL,
+    Id UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
+    ClienteId UNIQUEIDENTIFIER NOT NULL,
     Telefone NVARCHAR(20),
     Email NVARCHAR(100),
     CONSTRAINT PK_Contato PRIMARY KEY (Id),
@@ -95,10 +69,10 @@ CREATE NONCLUSTERED INDEX IDX_Contato_ClienteId ON Contato(ClienteId);
 CREATE NONCLUSTERED INDEX IDX_Contato_Email ON Contato(Email);
 GO
 
--- Endere�o dos clientes
+-- Endereço dos clientes
 CREATE TABLE EnderecoCliente (
-    Id INT IDENTITY(1,1),
-    ClienteId INT NOT NULL,
+    Id UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
+    ClienteId UNIQUEIDENTIFIER NOT NULL,
     Rua NVARCHAR(100) NOT NULL,
     Numero NVARCHAR(20) NOT NULL,
     Complemento NVARCHAR(100),
@@ -113,9 +87,9 @@ GO
 
 -- Plataformas
 CREATE TABLE Plataforma (
-    Id INT IDENTITY(1,1),
+    Id UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
     Nome NVARCHAR(100) NOT NULL,
-    FabricanteId INT NOT NULL,
+    FabricanteId UNIQUEIDENTIFIER NOT NULL,
     CONSTRAINT PK_Plataforma PRIMARY KEY (Id),
     CONSTRAINT FK_Plataforma_Fabricante FOREIGN KEY (FabricanteId) REFERENCES FabricantePlataforma(Id)
 );
@@ -124,40 +98,63 @@ GO
 CREATE NONCLUSTERED INDEX IDX_Plataforma_FabricanteId ON Plataforma(FabricanteId);
 GO
 
--- Jogos
-CREATE TABLE Jogo (
-    Id INT IDENTITY(1,1),
-    Nome NVARCHAR(150) NOT NULL,
-    Desenvolvedora NVARCHAR(100),
-    Distribuidora NVARCHAR(100),
-    GeneroId INT,
-    Descricao NVARCHAR(MAX),
-    Ativo BIT NOT NULL DEFAULT 1,
-    CONSTRAINT PK_Jogo PRIMARY KEY (Id),
-    CONSTRAINT FK_Jogo_Genero FOREIGN KEY (GeneroId) REFERENCES GeneroJogo(Id)
+-- Tipo de disponibilidade do jogo (Venda, Locação, Ambos)
+CREATE TABLE JogoVendaLocacao (
+    Id UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
+    Nome NVARCHAR(50) NOT NULL,
+    Descricao NVARCHAR(150),
+    CONSTRAINT PK_JogoVendaLocacao PRIMARY KEY (Id)
 );
 GO
 
-CREATE NONCLUSTERED INDEX IDX_Jogo_GeneroId ON Jogo(GeneroId);
+-- Jogos 
+CREATE TABLE Jogo (
+    Id UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
+    Nome NVARCHAR(150) NOT NULL,
+    Desenvolvedora NVARCHAR(100),
+    Distribuidora NVARCHAR(100),
+    JogoVendaLocacaoId UNIQUEIDENTIFIER NOT NULL,
+    Descricao NVARCHAR(MAX),
+    Ativo BIT NOT NULL DEFAULT 1,
+    CONSTRAINT PK_Jogo PRIMARY KEY (Id),
+    CONSTRAINT FK_Jogo_JogoVendaLocacao FOREIGN KEY (JogoVendaLocacaoId) REFERENCES JogoVendaLocacao(Id)
+);
+GO
+
+CREATE NONCLUSTERED INDEX IDX_Jogo_JogoVendaLocacaoId ON Jogo(JogoVendaLocacaoId);
+GO
+
+-- Tabela de Junção para Jogo e Gênero (Muitos para Muitos)
+CREATE TABLE ListaGeneroJogo (
+    JogoId UNIQUEIDENTIFIER NOT NULL,
+    GeneroId UNIQUEIDENTIFIER NOT NULL,
+    CONSTRAINT PK_JogoGenero PRIMARY KEY (JogoId, GeneroId),
+    CONSTRAINT FK_JogoGenero_Jogo FOREIGN KEY (JogoId) REFERENCES Jogo(Id),
+    CONSTRAINT FK_JogoGenero_Genero FOREIGN KEY (GeneroId) REFERENCES GeneroJogo(Id)
+);
+GO
+
+CREATE NONCLUSTERED INDEX IDX_ListaGeneroJogo_JogoId ON ListaGeneroJogo(JogoId);
+CREATE NONCLUSTERED INDEX IDX_ListaGeneroJogo_GeneroId ON ListaGeneroJogo(GeneroId);
 GO
 
 -- Estoque
 CREATE TABLE Estoque (
-    Id INT IDENTITY(1,1),
-    JogoId INT NOT NULL,
+    Id UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
+    JogoId UNIQUEIDENTIFIER NOT NULL,
     Quantidade INT NOT NULL,
     CONSTRAINT PK_Estoque PRIMARY KEY (Id),
     CONSTRAINT FK_Estoque_Jogo FOREIGN KEY (JogoId) REFERENCES Jogo(Id)
 );
 GO
 
--- Movimenta��o de estoque
+-- Movimentação de estoque
 CREATE TABLE MovimentacaoEstoque (
-    Id INT IDENTITY(1,1),
-    JogoId INT NOT NULL,
-    TipoMovimentacaoId INT NOT NULL,
+    Id UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
+    JogoId UNIQUEIDENTIFIER NOT NULL,
+    TipoMovimentacaoId UNIQUEIDENTIFIER NOT NULL,
     QuantidadeMovimentada INT NOT NULL,
-    UsuarioId INT NOT NULL,
+    UsuarioId UNIQUEIDENTIFIER NOT NULL,
     CONSTRAINT PK_MovimentacaoEstoque PRIMARY KEY (Id),
     CONSTRAINT FK_MovimentacaoEstoque_Jogo FOREIGN KEY (JogoId) REFERENCES Jogo(Id),
     CONSTRAINT FK_MovimentacaoEstoque_Usuario FOREIGN KEY (UsuarioId) REFERENCES Usuario(Id),
@@ -165,11 +162,11 @@ CREATE TABLE MovimentacaoEstoque (
 );
 GO
 
--- Promo��es
+-- Promoções
 CREATE TABLE Promocao (
-    Id INT IDENTITY(1,1),
-    JogoId INT NOT NULL,
-    PlataformaId INT NOT NULL,
+    Id UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
+    JogoId UNIQUEIDENTIFIER NOT NULL,
+    PlataformaId UNIQUEIDENTIFIER NOT NULL,
     PrecoPromocional DECIMAL(10,2) NOT NULL,
     CONSTRAINT PK_Promocao PRIMARY KEY (Id),
     CONSTRAINT FK_Promocao_Jogo FOREIGN KEY (JogoId) REFERENCES Jogo(Id),
@@ -180,33 +177,92 @@ GO
 CREATE NONCLUSTERED INDEX IDX_Promocao_Jogo_Plataforma ON Promocao(JogoId, PlataformaId);
 GO
 
--- Vendas
-CREATE TABLE Venda (
-    Id INT IDENTITY(1,1),
-    ClienteId INT NOT NULL,
-    TipoVendaId INT NOT NULL,
-    ValorTotal DECIMAL(10,2),
-    Desconto DECIMAL(10,2),
-    FormaPagamentoId INT NOT NULL,
-    StatusVendaId INT NOT NULL,
-    UsuarioId INT NOT NULL,
-    CONSTRAINT PK_Venda PRIMARY KEY (Id),
-    CONSTRAINT FK_Venda_Cliente FOREIGN KEY (ClienteId) REFERENCES Cliente(Id),
-    CONSTRAINT FK_Venda_FormaPagamento FOREIGN KEY (FormaPagamentoId) REFERENCES FormaPagamento(Id),
-    CONSTRAINT FK_Venda_StatusVenda FOREIGN KEY (StatusVendaId) REFERENCES StatusVenda(Id),
-    CONSTRAINT FK_Venda_TipoVenda FOREIGN KEY (TipoVendaId) REFERENCES TipoVenda(Id),
-    CONSTRAINT FK_Venda_Usuario FOREIGN KEY (UsuarioId) REFERENCES Usuario(Id)
+-- Tabela de Pagamento 
+CREATE TABLE Pagamento (
+    Id UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
+    Valor DECIMAL(10,2) NOT NULL,
+    DataPagamento DATETIME NOT NULL DEFAULT GETDATE(),
+    TipoPagamento NVARCHAR(50) NOT NULL,
+    CONSTRAINT PK_Pagamento PRIMARY KEY (Id)
 );
 GO
 
-CREATE NONCLUSTERED INDEX IDX_Venda_ClienteId ON Venda(ClienteId);
+-- Tabela de Pagamento com Cartão de Crédito
+CREATE TABLE PagamentoCartaoCredito (
+    Id UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
+    PagamentoId UNIQUEIDENTIFIER NOT NULL,
+    NumeroCartaoFinal NVARCHAR(4) NOT NULL,
+    Bandeira NVARCHAR(50),
+    TokenTransacao NVARCHAR(255),
+    CONSTRAINT PK_PagamentoCartaoCredito PRIMARY KEY (Id),
+    CONSTRAINT FK_PagamentoCartaoCredito_Pagamento FOREIGN KEY (PagamentoId) REFERENCES Pagamento(Id)
+);
+GO
+
+-- Tabela de Pagamento com Pix
+CREATE TABLE PagamentoPix (
+    Id UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
+    PagamentoId UNIQUEIDENTIFIER NOT NULL,
+    ChavePix NVARCHAR(255),
+    QrCodeBase64 NVARCHAR(MAX),
+    DataExpiracao DATETIME,
+    CONSTRAINT PK_PagamentoPix PRIMARY KEY (Id),
+    CONSTRAINT FK_PagamentoPix_Pagamento FOREIGN KEY (PagamentoId) REFERENCES Pagamento(Id)
+);
+GO
+
+-- Tabela de Pagamento com Cartão de Débito
+CREATE TABLE PagamentoCartaoDebito (
+    Id UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
+    PagamentoId UNIQUEIDENTIFIER NOT NULL,
+    NumeroCartaoFinal NVARCHAR(4) NOT NULL,
+    Bandeira NVARCHAR(50),
+    TokenTransacao NVARCHAR(255),
+    CONSTRAINT PK_PagamentoCartaoDebito PRIMARY KEY (Id),
+    CONSTRAINT FK_PagamentoCartaoDebito_Pagamento FOREIGN KEY (PagamentoId) REFERENCES Pagamento(Id)
+);
+GO
+
+-- Tabela de Transação de Saída (nova tabela para unificar vendas e locações)
+CREATE TABLE TransacaoSaida (
+    Id UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
+    ClienteId UNIQUEIDENTIFIER NOT NULL,
+    UsuarioId UNIQUEIDENTIFIER, 
+    DataSaida DATETIME NOT NULL DEFAULT GETDATE(),
+    TipoSaida NVARCHAR(50) NOT NULL, -- 'Venda' ou 'Locacao'
+    ValorTotal DECIMAL(10,2) NOT NULL,
+    Desconto DECIMAL(10,2) DEFAULT 0,
+    [Status] NVARCHAR(50) NOT NULL,
+    PagamentoId UNIQUEIDENTIFIER NOT NULL,
+    CONSTRAINT PK_TransacaoSaida PRIMARY KEY (Id),
+    CONSTRAINT FK_TransacaoSaida_Cliente FOREIGN KEY (ClienteId) REFERENCES Cliente(Id),
+    CONSTRAINT FK_TransacaoSaida_Usuario FOREIGN KEY (UsuarioId) REFERENCES Usuario(Id),
+    CONSTRAINT FK_TransacaoSaida_Pagamento FOREIGN KEY (PagamentoId) REFERENCES Pagamento(Id)
+);
+GO
+
+CREATE NONCLUSTERED INDEX IDX_TransacaoSaida_ClienteId ON TransacaoSaida(ClienteId);
+CREATE NONCLUSTERED INDEX IDX_TransacaoSaida_UsuarioId ON TransacaoSaida(UsuarioId);
+CREATE NONCLUSTERED INDEX IDX_TransacaoSaida_PagamentoId ON TransacaoSaida(PagamentoId);
+GO
+
+-- Vendas 
+CREATE TABLE Venda (
+    Id UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
+    TransacaoSaidaId UNIQUEIDENTIFIER NOT NULL,
+    CONSTRAINT PK_Venda PRIMARY KEY (Id),
+    CONSTRAINT FK_Venda_TransacaoSaida FOREIGN KEY (TransacaoSaidaId) REFERENCES TransacaoSaida(Id)
+);
+GO
+
+CREATE UNIQUE NONCLUSTERED INDEX UDX_Venda_TransacaoSaidaId ON Venda(TransacaoSaidaId);
 GO
 
 -- Itens da venda
 CREATE TABLE VendaItem (
-    Id INT IDENTITY(1,1),
-    VendaId INT NOT NULL,
-    JogoId INT NOT NULL,
+    Id UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
+    VendaId UNIQUEIDENTIFIER NOT NULL,
+    JogoId UNIQUEIDENTIFIER NOT NULL,
     PrecoVenda DECIMAL(10,2) NOT NULL,
     Quantidade INT NOT NULL,
     CONSTRAINT PK_VendaItem PRIMARY KEY (Id),
@@ -215,17 +271,47 @@ CREATE TABLE VendaItem (
 );
 GO
 
--- Carrinho (pr�-venda)
+-- Tabela de Locação
+CREATE TABLE Locacao (
+    Id UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
+    TransacaoSaidaId UNIQUEIDENTIFIER NOT NULL,
+    DataLocacao DATETIME NOT NULL DEFAULT GETDATE(),
+    DataDevolucaoPrevista DATE NOT NULL,
+    DataDevolucaoRealizada DATE,
+    ValorDiaria DECIMAL(10,2) NOT NULL,
+    StatusLocacao NVARCHAR(50) NOT NULL,
+    CONSTRAINT PK_Locacao PRIMARY KEY (Id),
+    CONSTRAINT FK_Locacao_TransacaoSaida FOREIGN KEY (TransacaoSaidaId) REFERENCES TransacaoSaida(Id)
+);
+GO
+
+CREATE UNIQUE NONCLUSTERED INDEX UDX_Locacao_TransacaoSaidaId ON Locacao(TransacaoSaidaId);
+GO
+
+-- Itens da Locação
+CREATE TABLE LocacaoItem (
+    Id UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
+    LocacaoId UNIQUEIDENTIFIER NOT NULL,
+    JogoId UNIQUEIDENTIFIER NOT NULL,
+    PrecoLocacao DECIMAL(10,2) NOT NULL,
+    Quantidade INT NOT NULL,
+    CONSTRAINT PK_LocacaoItem PRIMARY KEY (Id),
+    CONSTRAINT FK_LocacaoItem_Locacao FOREIGN KEY (LocacaoId) REFERENCES Locacao(Id),
+    CONSTRAINT FK_LocacaoItem_Jogo FOREIGN KEY (JogoId) REFERENCES Jogo(Id)
+);
+GO
+
+-- Carrinho
 CREATE TABLE CarrinhoItem (
-    Id INT IDENTITY(1,1),
-    ClienteId INT,
-    JogoId INT NOT NULL,
-    PlataformaId INT NOT NULL,
+    Id UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID(),
+    ClienteId UNIQUEIDENTIFIER,
+    JogoId UNIQUEIDENTIFIER NOT NULL,
+    PlataformaId UNIQUEIDENTIFIER NOT NULL,
     Quantidade INT NOT NULL DEFAULT 1,
     PrecoOriginal DECIMAL(10,2) NOT NULL,
     PrecoComDesconto DECIMAL(10,2),
-    UsuarioId INT NOT NULL,
-    GuidCarrinho UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
+    UsuarioId UNIQUEIDENTIFIER NOT NULL,
+    GuidCarrinho UNIQUEIDENTIFIER NOT NULL DEFAULT NEWSEQUENTIALID(),
     CONSTRAINT PK_CarrinhoItem PRIMARY KEY (Id),
     CONSTRAINT FK_CarrinhoItem_Cliente FOREIGN KEY (ClienteId) REFERENCES Cliente(Id),
     CONSTRAINT FK_CarrinhoItem_Jogo FOREIGN KEY (JogoId) REFERENCES Jogo(Id),
